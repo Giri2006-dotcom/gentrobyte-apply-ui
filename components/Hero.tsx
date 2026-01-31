@@ -4,26 +4,26 @@ import { HiArrowRight, HiSparkles } from 'react-icons/hi';
 
 const Hero: React.FC = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white pt-20">
+    <section className="relative min-h-[90vh] sm:min-h-screen flex items-center justify-center overflow-hidden bg-white pt-24 sm:pt-20">
       {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-primary-100 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob"></div>
-        <div className="absolute top-40 right-10 w-96 h-96 bg-accent-100 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-1/2 w-96 h-96 bg-primary-50 rounded-full mix-blend-multiply filter blur-[120px] opacity-70 animate-blob animation-delay-4000"></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-64 h-64 sm:w-96 sm:h-96 bg-primary-100 rounded-full mix-blend-multiply filter blur-[80px] sm:blur-[120px] opacity-70 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-64 h-64 sm:w-96 sm:h-96 bg-accent-100 rounded-full mix-blend-multiply filter blur-[80px] sm:blur-[120px] opacity-70 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-1/2 w-64 h-64 sm:w-96 sm:h-96 bg-primary-50 rounded-full mix-blend-multiply filter blur-[80px] sm:blur-[120px] opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-5xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center space-x-2 bg-navy-50 border border-navy-100 text-primary-700 px-5 py-2 rounded-full mb-10 animate-fade-in shadow-sm">
-            <HiSparkles className="h-5 w-5 text-accent-500" />
-            <span className="text-sm font-bold uppercase tracking-[0.2em]">
+          <div className="inline-flex items-center space-x-2 bg-navy-50 border border-navy-100 text-primary-700 px-4 sm:px-5 py-2 rounded-full mb-8 sm:mb-10 animate-fade-in shadow-sm">
+            <HiSparkles className="h-4 w-4 sm:h-5 sm:w-5 text-accent-500" />
+            <span className="text-[10px] sm:text-sm font-bold uppercase tracking-[0.2em]">
               Now Accepting Applications for 2026
             </span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-navy-900 mb-8 leading-[1.1] animate-fade-in-up tracking-tight">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-navy-900 mb-6 sm:mb-8 leading-[1.2] sm:leading-[1.1] animate-fade-in-up tracking-tight px-2 sm:px-0">
             Gentrobyte Internships —{' '}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-primary-500 to-accent-600">
               Build, Learn, Achieve

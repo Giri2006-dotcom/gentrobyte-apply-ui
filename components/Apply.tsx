@@ -324,12 +324,12 @@ const Apply: React.FC = () => {
             <span className="text-primary-400 text-sm font-bold relative z-10">{steps[currentStep-1].title}</span>
           </div>
           
-          <div className="p-8 md:p-12">
+          <div className="p-6 md:p-12">
             <form onSubmit={handleSubmit}>
               {/* Step 1: Personal Info */}
               {currentStep === 1 && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                     <div>
                       <label htmlFor="firstName" className="block text-sm font-bold text-navy-900 mb-2">
                         First Name <span className="text-accent-500">*</span>
@@ -364,7 +364,7 @@ const Apply: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                     <div>
                       <label htmlFor="email" className="block text-sm font-bold text-navy-900 mb-2">
                         Email Address <span className="text-accent-500">*</span>
@@ -421,7 +421,7 @@ const Apply: React.FC = () => {
                     {errors.phone && <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1"><span>⚠</span> {errors.phone}</p>}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                     <div>
                       <label htmlFor="college" className="block text-sm font-bold text-navy-900 mb-2">
                         College / University <span className="text-accent-500">*</span>
@@ -694,40 +694,42 @@ const Apply: React.FC = () => {
                 </div>
               )}
 
-              {/* Navigation Buttons */}
-              <div className="flex items-center justify-between mt-12 pt-8 border-t border-navy-50">
-                <button
-                  type="button"
-                  onClick={handlePrevious}
-                  disabled={currentStep === 1}
-                  className={`flex items-center space-x-2 px-8 py-4 rounded-xl font-bold transition-all duration-300 ${
-                    currentStep === 1
-                      ? 'bg-navy-50 text-navy-200 cursor-not-allowed border border-transparent'
-                      : 'bg-white text-navy-600 border-2 border-navy-100 hover:border-navy-900 hover:text-navy-900'
-                  }`}
-                >
-                  <HiArrowLeft className="h-5 w-5" />
-                  <span>Previous</span>
-                </button>
-
-                {currentStep < totalSteps ? (
+              {/* Navigation Buttons - Sticky on Mobile */}
+              <div className="sticky bottom-0 sm:static bg-white/80 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none -mx-6 sm:mx-0 px-6 sm:px-0 py-4 sm:py-0 mt-8 sm:mt-12 border-t border-navy-50 sm:border-t-0 z-20">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <button
                     type="button"
-                    onClick={handleNext}
-                    className="flex items-center space-x-2 bg-navy-900 hover:bg-navy-800 text-white px-10 py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-navy-900/10"
+                    onClick={handlePrevious}
+                    disabled={currentStep === 1}
+                    className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-4 rounded-xl font-bold transition-all duration-300 ${
+                      currentStep === 1
+                        ? 'bg-navy-50 text-navy-200 cursor-not-allowed border border-transparent'
+                        : 'bg-white text-navy-600 border-2 border-navy-100 hover:border-navy-900 hover:text-navy-900'
+                    }`}
                   >
-                    <span>Continue</span>
-                    <HiArrowRight className="h-5 w-5" />
+                    <HiArrowLeft className="h-5 w-5" />
+                    <span>Previous</span>
                   </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-10 py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-primary-600/20"
-                  >
-                    <span>Finalize Application</span>
-                    <HiCheckCircle className="h-5 w-5" />
-                  </button>
-                )}
+
+                  {currentStep < totalSteps ? (
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-800 text-white px-10 py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-navy-900/10"
+                    >
+                      <span>Continue</span>
+                      <HiArrowRight className="h-5 w-5" />
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-10 py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-primary-600/20"
+                    >
+                      <span>Finalize Application</span>
+                      <HiCheckCircle className="h-5 w-5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           </div>

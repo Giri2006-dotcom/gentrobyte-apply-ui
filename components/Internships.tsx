@@ -79,7 +79,7 @@ const Internships: React.FC = () => {
         </div>
 
         {/* Internship Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
           {internships.map((internship, index) => (
             <div key={index} className="transform hover:-translate-y-2 transition-all duration-500">
               <InternshipCard {...internship} />

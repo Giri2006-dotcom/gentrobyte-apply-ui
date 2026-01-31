@@ -90,10 +90,10 @@ const Achievements: React.FC = () => {
 
         {/* Timeline Section */}
         <div className="mb-24">
-          <h3 className="text-3xl font-bold text-navy-900 text-center mb-12 uppercase tracking-widest">
+          <h3 className="text-2xl sm:text-3xl font-bold text-navy-900 text-center mb-12 uppercase tracking-widest">
             Milestones & Awards
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {achievements.map((achievement, index) => (
               <div
                 key={index}
@@ -123,10 +123,10 @@ const Achievements: React.FC = () => {
 
         {/* Company Awards */}
         <div className="mb-24">
-          <h3 className="text-3xl font-bold text-navy-900 text-center mb-12 uppercase tracking-widest">
+          <h3 className="text-2xl sm:text-3xl font-bold text-navy-900 text-center mb-12 uppercase tracking-widest">
             Recognition & Honors
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
             {companyAwards.map((award, index) => (
               <div
                 key={index}
@@ -141,10 +141,10 @@ const Achievements: React.FC = () => {
 
         {/* Testimonials */}
         <div>
-          <h3 className="text-3xl font-bold text-navy-900 text-center mb-12 uppercase tracking-widest">
+          <h3 className="text-2xl sm:text-3xl font-bold text-navy-900 text-center mb-12 uppercase tracking-widest">
             Intern Success Stories
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
             {testimonials.map((testimonial, index) => (
               <div
                 key={index}

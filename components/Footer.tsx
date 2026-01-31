@@ -17,8 +17,8 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-navy-900 text-navy-300 border-t border-navy-800">
       {/* Main Footer Content */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 sm:gap-12">
           {/* Company Info */}
           <div className="space-y-6">
             <div className="flex items-center space-x-3 group cursor-pointer">

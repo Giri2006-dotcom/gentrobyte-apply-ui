@@ -36,8 +36,8 @@ const Navbar: React.FC = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
           {/* Logo Section */}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-primary-500/20 group-hover:border-primary-500 transition-all duration-300 shadow-lg shrink-0">
+          <Link href="/" className="flex items-center space-x-2 sm:space-x-3 group min-w-0">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-primary-500/20 group-hover:border-primary-500 transition-all duration-300 shadow-lg shrink-0">
               <Image 
                 src="/logo.png" 
                 alt="Gentrobyte Logo" 
@@ -47,7 +47,7 @@ const Navbar: React.FC = () => {
               />
             </div>
             
-            <span className={`text-xl font-bold transition-colors duration-300 ${isScrolled ? 'text-white' : 'text-navy-900'}`}>
+            <span className={`text-lg sm:text-xl font-bold transition-colors duration-300 truncate ${isScrolled ? 'text-white' : 'text-navy-900'}`}>
               Gentrobyte
             </span>
           </Link>
