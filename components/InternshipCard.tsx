@@ -1,6 +1,9 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { HiClock, HiLocationMarker, HiArrowRight } from 'react-icons/hi';
+import { motion } from 'framer-motion';
+import { HiClock, HiLocationMarker, HiArrowRight, HiCode, HiServer, HiSpeakerphone, HiPencil, HiCurrencyDollar, HiCalendar, HiCheckCircle } from 'react-icons/hi';
 
 interface InternshipCardProps {
   title: string;
@@ -45,74 +48,79 @@ const InternshipCard: React.FC<InternshipCardProps> = ({
   const getTypeIcon = () => {
     switch (type) {
       case 'frontend':
-        return '💻';
+        return <HiCode className="h-6 w-6" />;
       case 'backend':
-        return '⚙️';
+        return <HiServer className="h-6 w-6" />;
       case 'marketing':
-        return '📢';
+        return <HiSpeakerphone className="h-6 w-6" />;
       case 'design':
-        return '🎨';
+        return <HiPencil className="h-6 w-6" />;
       default:
-        return '🚀';
+        return <HiCode className="h-6 w-6" />;
     }
   };
 
   return (
-    <div className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 overflow-hidden border border-navy-100 hover:border-primary-300 hover:-translate-y-2 flex flex-col h-full">
+    <motion.div
+      whileHover={{ rotateY: 8, rotateX: 4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="group bg-white rounded-3xl shadow-sm transition-all duration-500 overflow-hidden border border-navy-100 hover:border-primary-300 flex flex-col h-full mx-auto max-w-[340px] sm:max-w-none"
+      style={{ transformStyle: 'preserve-3d' }}
+    >
       {/* Card Header */}
-      <div className="p-8 border-b border-navy-50 relative overflow-hidden">
+      <div className="p-6 sm:p-8 border-b border-navy-50 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/5 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-700"></div>
-        <div className="flex items-start justify-between mb-6 relative z-10">
-          <div className="flex items-center space-x-4">
-            <div className="text-4xl filter drop-shadow-sm group-hover:scale-110 transition-transform duration-500">{getTypeIcon()}</div>
+        <div className="flex items-start justify-between mb-3 sm:mb-6 relative z-10">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="text-2xl sm:text-4xl filter drop-shadow-sm group-hover:scale-110 transition-transform duration-500">{getTypeIcon()}</div>
             <div>
-              <h3 className="text-2xl font-bold text-navy-900 group-hover:text-primary-600 transition-colors tracking-tight">
+              <h3 className="text-base sm:text-2xl font-bold text-navy-900 group-hover:text-primary-600 transition-colors tracking-tight">
                 {title}
               </h3>
               <span
-                className={`inline-block px-4 py-1 rounded-full text-[10px] uppercase tracking-widest font-bold mt-2 border ${getTypeColor()}`}
+                className={`inline-block px-3 py-1 rounded-full text-[9px] uppercase tracking-wider font-bold mt-1.5 border ${getTypeColor()}`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </span>
             </div>
           </div>
         </div>
-        <p className="text-navy-600 leading-relaxed font-medium text-sm opacity-90">{description}</p>
+        <p className="text-navy-600 leading-relaxed font-medium text-[11px] sm:text-sm">{description}</p>
       </div>
 
       {/* Card Body */}
-      <div className="p-8 space-y-8 flex-grow">
+      <div className="p-6 sm:p-8 space-y-6 sm:space-y-8 flex-grow">
         {/* Key Details Grid */}
-        <div className="grid grid-cols-2 gap-6 text-xs uppercase tracking-widest font-bold">
-          <div className="flex items-center space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
-            <HiClock className="h-5 w-5 text-primary-500" />
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 text-[9px] sm:text-xs uppercase tracking-wider font-bold">
+          <div className="flex items-center space-x-1.5 sm:space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
+            <HiClock className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-primary-500" />
             <span>{duration}</span>
           </div>
-          <div className="flex items-center space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
-            <HiLocationMarker className="h-5 w-5 text-primary-500" />
-            <span>{mode}</span>
+          <div className="flex items-center space-x-1.5 sm:space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
+            <HiLocationMarker className="h-3.5 w-3.5 sm:h-5 sm:w-5 text-primary-500" />
+            <span>{location}</span>
           </div>
-          <div className="flex items-center space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
-            <span className="text-xl">💰</span>
+          <div className="flex items-center space-x-1.5 sm:space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
+            <HiCurrencyDollar className="h-5 w-5 text-primary-500" />
             <span>{stipend}</span>
           </div>
-          <div className="flex items-center space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
-            <span className="text-xl">📅</span>
-            <span>Starts: {startDate}</span>
+          <div className="flex items-center space-x-1.5 sm:space-x-3 text-navy-500 group-hover:text-navy-700 transition-colors">
+            <HiCalendar className="h-5 w-5 text-primary-500" />
+            <span>Starts: {startDate} • {mode}</span>
           </div>
         </div>
 
         {/* Skills Required */}
         <div>
-          <h4 className="text-[10px] uppercase tracking-[0.2em] font-black text-navy-400 mb-4 flex items-center">
-            <span className="w-8 h-px bg-navy-200 mr-2"></span>
+          <h4 className="text-[9px] uppercase tracking-wider font-black text-navy-400 mb-3 flex items-center">
+            <span className="w-6 h-px bg-navy-200 mr-1.5"></span>
             Technical Stack
           </h4>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {skills.map((skill, index) => (
               <span
                 key={index}
-                className="px-3 py-1.5 bg-navy-50 text-navy-700 rounded-lg text-[10px] font-bold uppercase border border-navy-100 group-hover:border-primary-200 group-hover:bg-primary-50 transition-all duration-300"
+                className="px-2 py-1 bg-navy-50 text-navy-700 rounded-lg text-[9px] font-bold uppercase border border-navy-100 group-hover:border-primary-200 group-hover:bg-primary-50 transition-all duration-300"
               >
                 {skill}
               </span>
@@ -122,17 +130,17 @@ const InternshipCard: React.FC<InternshipCardProps> = ({
 
         {/* Benefits */}
         <div>
-          <h4 className="text-[10px] uppercase tracking-[0.2em] font-black text-navy-400 mb-4 flex items-center">
-            <span className="w-8 h-px bg-navy-200 mr-2"></span>
+          <h4 className="text-[9px] uppercase tracking-wider font-black text-navy-400 mb-3 flex items-center">
+            <span className="w-6 h-px bg-navy-200 mr-1.5"></span>
             Perks & Benefits
           </h4>
-          <ul className="space-y-3">
+          <ul className="space-y-2.5">
             {benefits.map((benefit, index) => (
               <li
                 key={index}
-                className="flex items-start space-x-3 text-sm text-navy-600 font-medium group/item hover:text-navy-900 transition-colors duration-300"
+                className="flex items-start space-x-2 text-[11px] sm:text-sm text-navy-600 font-medium group/item hover:text-navy-900 transition-colors duration-300"
               >
-                <span className="text-accent-500 font-bold group-hover/item:scale-125 transition-transform">✓</span>
+                <HiCheckCircle className="text-accent-500 font-bold group-hover/item:scale-125 transition-transform mt-0.5 h-4 w-4" />
                 <span className="group-hover/item:translate-x-1 transition-transform duration-300">{benefit}</span>
               </li>
             ))}
@@ -141,16 +149,16 @@ const InternshipCard: React.FC<InternshipCardProps> = ({
       </div>
 
       {/* Card Footer */}
-      <div className="px-8 pb-8 mt-auto">
+      <div className="px-6 sm:px-8 pb-6 sm:pb-8 mt-auto">
         <Link
           href="/apply"
-          className="group/btn w-full bg-navy-900 hover:bg-primary-600 text-white px-6 py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl shadow-navy-900/10 hover:shadow-primary-600/30 active:scale-95"
+          className="group/btn w-full bg-navy-900 hover:bg-primary-600 text-white px-5 sm:px-6 py-3.5 sm:py-4 rounded-2xl font-bold transition-all duration-300 flex items-center justify-center space-x-3 shadow-xl shadow-navy-900/10 hover:shadow-primary-600/30 active:scale-95"
         >
           <span className="uppercase tracking-widest text-xs">Apply for this Role</span>
           <HiArrowRight className="h-5 w-5 group-hover/btn:translate-x-2 transition-transform text-accent-400" />
         </Link>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

@@ -6,16 +6,30 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "backend:dev": "ts-node-dev --respawn --transpile-only --prefer-ts-exts server/src/index.ts",
+    "backend:build": "tsc -p server/tsconfig.json",
+    "backend:start": "node server/dist/index.js"
   },
   "dependencies": {
+    "crypto": "^1.0.1",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "framer-motion": "^12.35.0",
+    "jspdf": "^2.5.1",
+    "mongoose": "^9.2.4",
     "next": "^14.0.4",
+    "nodemailer": "^8.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.12.0"
   },
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.6",
+    "@types/mongoose": "^5.11.96",
     "@types/node": "^20.10.6",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18.2.46",
     "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.16",
@@ -23,6 +37,26 @@
     "eslint-config-next": "^14.0.4",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.3"
-  }
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
+  },
+  "dependenciesMeta": {
+    "jspdf": {
+      "optional": true
+    }
+  },
+  "description": "A professional, modern internship application website built with Next.js, React, TypeScript, and Tailwind CSS.",
+  "main": "next.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Giri2006-dotcom/gentrobyte-apply-ui.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Giri2006-dotcom/gentrobyte-apply-ui/issues"
+  },
+  "homepage": "https://github.com/Giri2006-dotcom/gentrobyte-apply-ui#readme"
 }

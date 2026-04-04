@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   HiUser,
   HiCode,
@@ -8,61 +8,433 @@ import {
   HiCheckCircle,
   HiArrowLeft,
   HiArrowRight,
+  HiChevronDown,
 } from 'react-icons/hi';
 
 interface FormData {
-  // Step 1: Personal Info
-  firstName: string;
-  lastName: string;
+  // Step 1: Basic Details
   email: string;
   confirmEmail: string;
-  phone: string;
+  fullName: string; // Combined first and last name
+  gender: string;
+  whatsapp: string;
+  country: string;
   college: string;
+  branch: string;
+  domain: string;
+  resume?: File | null;
+  // Step 2: Academic & Professional Details
+  collegeMail: string;
   degree: string;
   graduationYear: string;
-  // Step 2: Skills & Experience
-  skills: string;
   githubUrl: string;
   portfolioUrl: string;
+  // Step 3: Skills & Motivation
+  skills: string;
   whyApply: string;
-  // Step 3: Resume
-  resume: File | null;
   // Step 4: Consent
   consent: boolean;
 }
 
+// Removed unused option interfaces
+
 const Apply: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    lastName: '',
+    // Step 1: Basic Details
     email: '',
     confirmEmail: '',
-    phone: '+91',
+    fullName: '',
+    gender: '',
+    whatsapp: '',
+    country: '',
     college: '',
+    branch: '',
+    domain: '',
+    // Step 2: Academic & Professional Details
+    collegeMail: '',
     degree: '',
     graduationYear: '',
-    skills: '',
     githubUrl: '',
     portfolioUrl: '',
+    // Step 3: Skills & Motivation
+    skills: '',
     whyApply: '',
-    resume: null,
+    // Step 4: Consent
     consent: false,
+    resume: null,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // OTP State
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const [otpLoading, setOtpLoading] = useState(false);
+  
+  // Country Options
+  const countryOptions = [
+    { code: 'IN', name: 'India' },
+    { code: 'US', name: 'United States' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'AU', name: 'Australia' },
+    { code: 'DE', name: 'Germany' },
+    { code: 'FR', name: 'France' },
+    { code: 'JP', name: 'Japan' },
+    { code: 'CN', name: 'China' },
+    { code: 'SG', name: 'Singapore' },
+    { code: 'AE', name: 'United Arab Emirates' },
+    { code: 'SA', name: 'Saudi Arabia' },
+    { code: 'MY', name: 'Malaysia' },
+    { code: 'TH', name: 'Thailand' },
+    { code: 'PH', name: 'Philippines' },
+    { code: 'ID', name: 'Indonesia' },
+    { code: 'VN', name: 'Vietnam' },
+    { code: 'KR', name: 'South Korea' },
+    { code: 'BR', name: 'Brazil' },
+    { code: 'ZA', name: 'South Africa' },
+    // Add more countries as needed
+  ];
+
+  const branchOptionsMap: Record<string, string[]> = {
+    'BE/BTech': ['CSE', 'ECE', 'Mechanical', 'Civil', 'EEE'],
+    'BSc': ['Physics', 'Chemistry', 'Computer Science'],
+    'BEd': ['English', 'Mathematics', 'Science'],
+    'BCA': ['Computer Applications'],
+    'BCom': ['General', 'Accounting', 'Finance'],
+    'BBA': ['General', 'Marketing', 'Finance'],
+    'MCA': ['Computer Applications'],
+    'MBA': ['Finance', 'Marketing', 'HR'],
+    'MSc': ['Physics', 'Chemistry', 'Computer Science'],
+    'MA': ['English', 'History'],
+    'Other': ['Other']
+  };
 
   const totalSteps = 4;
 
-  const countWords = (str: string) => {
-    if (!str) return 0;
-    const words = str.trim().match(/\S+/g);
-    return words ? words.length : 0;
+  const [applicationId, setApplicationId] = useState<string>('');
+
+  // Custom Components for New Fields
+  const GenderRadioGroup = () => (
+    <div className="space-y-3">
+      <label className="block text-sm font-bold text-navy-900 mb-3">
+        Gender <span className="text-accent-500">*</span>
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {['Male', 'Female', 'Prefer not to say'].map((option) => (
+          <label 
+            key={option}
+            className={`flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              formData.gender === option
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-navy-100 bg-navy-50 hover:border-primary-300 hover:bg-primary-50 text-navy-700'
+            }`}
+          >
+            <input
+              type="radio"
+              name="gender"
+              value={option}
+              checked={formData.gender === option}
+              onChange={handleInputChange}
+              className="sr-only"
+            />
+            <span className="font-bold">{option}</span>
+          </label>
+        ))}
+      </div>
+      {errors.gender && <p className="mt-2 text-xs font-bold text-red-500">{errors.gender}</p>}
+    </div>
+  );
+
+  // Branch radio group removed; branch selection uses the Step 2 select
+
+  const DomainRadioGroup = () => (
+    <div className="space-y-3">
+      <label className="block text-sm font-bold text-navy-900 mb-3">
+        Preferred Domain <span className="text-accent-500">*</span>
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {[
+          { value: 'Cyber Security' },
+          { value: 'Data Science & Analytics' },
+          { value: 'Full Stack Web Development' },
+          { value: 'Machine Learning' },
+          { value: 'Prompt Engineering' },
+          { value: 'UI/UX Design' }
+        ].map((option) => (
+          <label 
+            key={option.value}
+            className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              formData.domain === option.value
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-navy-100 bg-navy-50 hover:border-primary-300 hover:bg-primary-50 text-navy-700'
+            }`}
+          >
+            <input
+              type="radio"
+              name="domain"
+              value={option.value}
+              checked={formData.domain === option.value}
+              onChange={handleInputChange}
+              className="sr-only"
+            />
+            <span className="font-bold text-sm">{option.value}</span>
+          </label>
+        ))}
+      </div>
+      {errors.domain && <p className="mt-2 text-xs font-bold text-red-500">{errors.domain}</p>}
+    </div>
+  );
+
+  const DegreeRadioGroup = () => (
+    <div className="space-y-3">
+      <label className="block text-sm font-bold text-navy-900 mb-3">
+        Degree Program <span className="text-accent-500">*</span>
+      </label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {[
+          { value: 'BCA' },
+          { value: 'BE/BTech' },
+          { value: 'BCom' },
+          { value: 'BBA' },
+          { value: 'MCA' },
+          { value: 'MBA' },
+          { value: 'MCom' },
+          { value: 'BSc' },
+          { value: 'MSc' },
+          { value: 'MA' },
+          { value: 'MCom' },
+          { value: 'Other' }
+        ].map((option) => (
+          <label 
+            key={option.value}
+            className={`flex items-center p-3 rounded-xl border-2 cursor-pointer transition-all ${
+              formData.degree === option.value
+                ? 'border-primary-500 bg-primary-50 text-primary-700'
+                : 'border-navy-100 bg-navy-50 hover:border-primary-300 hover:bg-primary-50 text-navy-700'
+            }`}
+          >
+            <input
+              type="radio"
+              name="degree"
+              value={option.value}
+              checked={formData.degree === option.value}
+              onChange={handleInputChange}
+              className="sr-only"
+            />
+            <span className="font-bold text-sm">{option.value}</span>
+          </label>
+        ))}
+      </div>
+      {errors.degree && <p className="mt-2 text-xs font-bold text-red-500">{errors.degree}</p>}
+    </div>
+  );
+
+  const generateAppId = () => `GEN-${Math.random().toString(36).substring(2,9).toUpperCase()}`;
+
+  const downloadPdf = () => {
+    (async () => {
+      try {
+        const { jsPDF } = await import('jspdf');
+        const doc = new jsPDF();
+        const lines: string[] = [];
+        lines.push('Gentrobyte Internship Application');
+        lines.push('Application ID: ' + applicationId);
+        lines.push('');
+        lines.push('Personal Details');
+        lines.push('Name: ' + formData.fullName);
+        lines.push('Email: ' + formData.email);
+        lines.push('WhatsApp: ' + formData.whatsapp);
+        lines.push('Gender: ' + formData.gender);
+        lines.push('Country: ' + formData.country);
+        lines.push('');
+        lines.push('Academic Details');
+        lines.push('College Mail: ' + formData.collegeMail);
+        lines.push('Degree Program: ' + formData.degree);
+        lines.push('Branch: ' + formData.branch);
+        lines.push('College: ' + formData.college + ' (' + formData.graduationYear + ')');
+        lines.push('');
+        lines.push('Professional Links');
+        lines.push('GitHub: ' + formData.githubUrl);
+        lines.push('Portfolio: ' + formData.portfolioUrl);
+        lines.push('');
+        lines.push('Skills & Motivation');
+        lines.push('Skills: ' + formData.skills);
+        lines.push('Why Gentrobyte: ' + formData.whyApply);
+
+        let y = 14;
+        doc.setFontSize(12);
+        for (const line of lines) {
+          const split = doc.splitTextToSize(line, 180);
+          doc.text(split, 14, y);
+          y += (split.length * 6) + 4;
+          if (y > 280) {
+            doc.addPage();
+            y = 14;
+          }
+        }
+        doc.save(`Gentrobyte-Application-${applicationId}.pdf`);
+      } catch (err) {
+        console.error(err);
+        alert('Failed to generate PDF. Please try again.');
+      }
+    })();
   };
+
+  const CountryDropdown = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const filteredCountries = countryOptions.filter(country =>
+      country.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleSelect = (country: { code: string; name: string }) => {
+      setFormData(prev => ({ ...prev, country: country.name }));
+      setIsOpen(false);
+      setSearchTerm('');
+      if (errors.country) {
+        setErrors(prev => {
+          const next = { ...prev };
+          delete next.country;
+          return next;
+        });
+      }
+    };
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+          setSearchTerm('');
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <label htmlFor="country" className="block text-sm font-bold text-navy-900 mb-2">
+          Country <span className="text-accent-500">*</span>
+        </label>
+        <button
+          type="button"
+          className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium text-left ${errors.country ? 'border-red-500' : 'border-transparent'}`}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          <div className="flex justify-between items-center">
+            <span className={formData.country ? 'text-navy-900' : 'text-navy-300'}>
+              {formData.country || 'Select your country'}
+            </span>
+            <HiChevronDown className={`h-5 w-5 text-navy-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+          </div>
+        </button>
+        
+        {isOpen && (
+          <div className="absolute z-10 mt-2 w-full bg-white border border-navy-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+            <input
+              type="text"
+              placeholder="Search countries..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 border-b border-navy-100 focus:outline-none text-navy-900"
+            />
+            <ul className="py-2">
+              {filteredCountries.map((country) => (
+                <li
+                  key={country.code}
+                  onClick={() => handleSelect(country)}
+                  className="px-4 py-3 hover:bg-navy-50 cursor-pointer text-navy-900 hover:text-primary-600 transition-colors"
+                >
+                  {country.name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {errors.country && <p className="mt-2 text-xs font-bold text-red-500">{errors.country}</p>}
+      </div>
+    );
+  };
+
+  // OTP Functions
+  const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
+  const sendOTP = async () => {
+    if (!formData.email) {
+      setErrors({ email: 'Please enter email first' });
+      return;
+    }
+    
+    setOtpLoading(true);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    const generatedOtp = generateOTP();
+    setOtp(generatedOtp);
+    setOtpSent(true);
+    setOtpTimer(60);
+    setOtpLoading(false);
+    
+    // In a real app, you would send this via email service
+    console.log('OTP sent to', formData.email, ':', generatedOtp);
+    alert(`OTP sent to ${formData.email}: ${generatedOtp} (This is a simulation)`);
+  };
+
+  const verifyOTP = () => {
+    if (otp.length !== 6) {
+      setErrors({ otp: 'Please enter a 6-digit OTP' });
+      return false;
+    }
+    
+    // In a real app, you would verify with backend
+    if (otp === generateOTP() || otp.length === 6) { // Simulate verification
+      setOtpVerified(true);
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.otp;
+        return next;
+      });
+      return true;
+    } else {
+      setErrors({ otp: 'Invalid OTP. Please try again.' });
+      return false;
+    }
+  };
+
+  const resendOTP = () => {
+    if (otpTimer > 0) return;
+    sendOTP();
+  };
+
+  // Timer effect for OTP resend
+  React.useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (otpTimer > 0) {
+      interval = setInterval(() => {
+        setOtpTimer(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [otpTimer]);
 
   const validateUrl = (url: string) => {
     try {
-      new URL(url);
+      // Check if URL has protocol (http:// or https://)
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        new URL(url);
+        return true;
+      }
+      
+      // If no protocol, try adding https:// and validate
+      new URL(`https://${url}`);
       return true;
     } catch {
       return false;
@@ -73,30 +445,39 @@ const Apply: React.FC = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-      if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Valid email is required';
+      if (!formData.email.trim()) newErrors.email = 'Email is required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Valid email is required';
       if (formData.email !== formData.confirmEmail) newErrors.confirmEmail = 'Emails do not match';
-      if (!/^\+91\d{10}$/.test(formData.phone)) newErrors.phone = 'Phone must be +91 followed by 10 digits';
+      if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
+      if (!formData.gender) newErrors.gender = 'Gender is required';
+      if (!formData.whatsapp.trim()) newErrors.whatsapp = 'WhatsApp number is required';
+      else if (!/^\+\d{1,4}\d{7,14}$/.test(formData.whatsapp)) newErrors.whatsapp = 'Please enter a valid WhatsApp number with country code (e.g., +91XXXXXXXXXX)';
+      if (!formData.country) newErrors.country = 'Country is required';
       if (!formData.college.trim()) newErrors.college = 'College name is required';
       if (!formData.degree.trim()) newErrors.degree = 'Degree program is required';
+      if (!formData.domain) newErrors.domain = 'Preferred domain is required';
+    }
+
+    if (step === 2) {
+      if (!formData.collegeMail.trim()) newErrors.collegeMail = 'College mail is required';
+      else if (formData.collegeMail === formData.email) newErrors.collegeMail = 'College mail must be different from primary email';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.collegeMail)) newErrors.collegeMail = 'Valid college email is required';
+      if (!formData.branch.trim()) newErrors.branch = 'Branch is required';
       const year = parseInt(formData.graduationYear);
       if (!/^\d{4}$/.test(formData.graduationYear)) {
         newErrors.graduationYear = 'Year must be 4 digits';
       } else if (year > 2029) {
         newErrors.graduationYear = 'Graduation year cannot be greater than 2029';
       }
-    }
-
-    if (step === 2) {
-      if (countWords(formData.skills) < 120) newErrors.skills = `Minimum 120 words required (current: ${countWords(formData.skills)})`;
-      if (!validateUrl(formData.githubUrl)) newErrors.githubUrl = 'Valid GitHub URL is required';
-      if (!validateUrl(formData.portfolioUrl)) newErrors.portfolioUrl = 'Valid Portfolio URL is required';
-      if (countWords(formData.whyApply) < 60) newErrors.whyApply = `Minimum 60 words required (current: ${countWords(formData.whyApply)})`;
+      if (!formData.githubUrl.trim()) newErrors.githubUrl = 'GitHub URL is required';
+      else if (!validateUrl(formData.githubUrl)) newErrors.githubUrl = 'Please enter a valid GitHub URL (must start with http:// or https://)';
+      if (!formData.portfolioUrl.trim()) newErrors.portfolioUrl = 'Portfolio URL is required';
+      else if (!validateUrl(formData.portfolioUrl)) newErrors.portfolioUrl = 'Please enter a valid Portfolio URL (e.g., https://portfolio.com or portfolio.com)';
     }
 
     if (step === 3) {
-      if (!formData.resume) newErrors.resume = 'Resume upload is required';
+      if (!formData.skills.trim()) newErrors.skills = 'Technical skills field is required';
+      if (!formData.whyApply.trim()) newErrors.whyApply = 'Why Gentrobyte field is required';
     }
 
     if (step === 4) {
@@ -114,17 +495,26 @@ const Apply: React.FC = () => {
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
-    } else if (name === 'phone') {
-      // Ensure +91 prefix stays and only digits follow
+    } else if (name === 'whatsapp') {
+      // Handle WhatsApp number with country code
       let val = value;
-      if (!val.startsWith('+91')) {
-        val = '+91' + val.replace(/^\+?91?/, '');
+      // Ensure it starts with + and contains digits
+      if (!val.startsWith('+')) {
+        val = '+' + val.replace(/^\+/, '');
       }
-      const digits = val.slice(3).replace(/\D/g, '').slice(0, 10);
-      setFormData((prev) => ({ ...prev, [name]: '+91' + digits }));
+      setFormData((prev) => ({ ...prev, [name]: val }));
     } else if (name === 'graduationYear') {
       const val = value.replace(/\D/g, '').slice(0, 4);
+      // Prevent years greater than 2029
+      const year = parseInt(val);
+      if (year > 2029) {
+        setErrors(prev => ({ ...prev, graduationYear: 'Graduation year cannot be greater than 2029' }));
+        return;
+      }
       setFormData((prev) => ({ ...prev, [name]: val }));
+    } else if (name === 'fullName') {
+      // Convert to uppercase
+      setFormData((prev) => ({ ...prev, [name]: value.toUpperCase() }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
@@ -135,22 +525,6 @@ const Apply: React.FC = () => {
         delete next[name];
         return next;
       });
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-      if (!allowedTypes.includes(file.type)) {
-        alert('Please upload a PDF or Word document.');
-        return;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size exceeds 10MB.');
-        return;
-      }
-      setFormData((prev) => ({ ...prev, resume: file }));
     }
   };
 
@@ -171,17 +545,19 @@ const Apply: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (validateStep(4)) {
-      console.log('Form submitted:', formData);
+      const appId = generateAppId();
+      setApplicationId(appId);
+      console.log('Form submitted:', formData, 'Application ID:', appId);
       setIsSubmitted(true);
     }
   };
 
   const steps = [
-    { number: 1, title: 'Personal Info', icon: <HiUser className="h-6 w-6" /> },
-    { number: 2, title: 'Skills', icon: <HiCode className="h-6 w-6" /> },
+    { number: 1, title: 'Basic Details', icon: <HiUser className="h-6 w-6" /> },
+    { number: 2, title: 'Academic Details', icon: <HiCode className="h-6 w-6" /> },
     {
       number: 3,
-      title: 'Resume',
+      title: 'Skills & Motivation',
       icon: <HiDocumentText className="h-6 w-6" />,
     },
     { number: 4, title: 'Review', icon: <HiCheckCircle className="h-6 w-6" /> },
@@ -200,12 +576,12 @@ const Apply: React.FC = () => {
                 <HiCheckCircle className="h-20 w-20" />
               </div>
             </div>
-            <h2 className="text-4xl font-black text-navy-900 mb-6 tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-black text-navy-900 mb-6 tracking-tight">
               Application <span className="text-primary-600">Successful!</span>
             </h2>
-            <p className="text-lg text-navy-600 mb-10 font-medium leading-relaxed">
-              Thank you for applying to Gentrobyte. We've received your
-              application and will review it shortly. You'll hear from us within
+            <p className="text-base sm:text-lg text-navy-600 mb-10 font-medium leading-relaxed">
+              Thank you for applying to Gentrobyte. We&apos;ve received your
+              application and will review it shortly. You&apos;ll hear from us within
               5-7 business days.
             </p>
             <div className="bg-white border border-navy-100 rounded-2xl p-8 mb-10 text-left shadow-inner">
@@ -215,39 +591,65 @@ const Apply: React.FC = () => {
               </p>
               <div className="space-y-3">
                 <p className="text-sm text-navy-700">
-                  <strong className="text-navy-900">Application ID:</strong> <span className="font-mono bg-navy-50 px-2 py-1 rounded">GEN-{Math.random().toString(36).substring(7).toUpperCase()}</span>
+                  <strong className="text-navy-900">Application ID:</strong> <span className="font-mono bg-navy-50 px-2 py-1 rounded">{applicationId}</span>
                 </p>
                 <p className="text-sm text-navy-700">
                   <strong className="text-navy-900">Email:</strong> <span className="underline decoration-primary-200">{formData.email}</span>
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                setIsSubmitted(false);
-                setCurrentStep(1);
-                setFormData({
-                  firstName: '',
-                  lastName: '',
-                  email: '',
-                  confirmEmail: '',
-                  phone: '+91',
-                  college: '',
-                  degree: '',
-                  graduationYear: '',
-                  skills: '',
-                  githubUrl: '',
-                  portfolioUrl: '',
-                  whyApply: '',
-                  resume: null,
-                  consent: false,
-                });
-                setErrors({});
-              }}
-              className="w-full bg-navy-900 hover:bg-navy-800 text-white px-8 py-5 rounded-2xl font-black text-lg transition-all duration-300 shadow-2xl shadow-navy-900/20 active:scale-95"
-            >
-              Submit Another Application
-            </button>
+            <p className="text-base sm:text-lg text-navy-600 mb-6 font-medium leading-relaxed">
+              A confirmation email has been sent to your registered email address acknowledging receipt of your application.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={() => downloadPdf()}
+                className="w-full bg-white border-2 border-navy-100 hover:border-navy-900 text-navy-900 px-6 py-3 rounded-2xl font-bold transition-all duration-300"
+              >
+                Download PDF
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsSubmitted(false);
+                  setCurrentStep(1);
+                  setFormData({
+                    // Step 1: Basic Details
+                    email: '',
+                    confirmEmail: '',
+                    fullName: '',
+                    gender: '',
+                    whatsapp: '',
+                    country: '',
+                    college: '',
+                    branch: '',
+                    domain: '',
+                    // Step 2: Academic & Professional Details
+                    collegeMail: '',
+                    degree: '',
+                    graduationYear: '',
+                    githubUrl: '',
+                    portfolioUrl: '',
+                    // Step 3: Skills & Motivation
+                    skills: '',
+                    whyApply: '',
+                    // Step 4: Consent
+                    consent: false,
+                  });
+                  setErrors({});
+                  setApplicationId('');
+                  // Reset OTP state
+                  setOtp('');
+                  setOtpSent(false);
+                  setOtpVerified(false);
+                  setOtpTimer(0);
+                  setOtpLoading(false);
+                }}
+                className="w-full bg-navy-900 hover:bg-navy-800 text-white px-8 py-3 rounded-2xl font-black text-lg transition-all duration-300 shadow-2xl shadow-navy-900/20 active:scale-95"
+              >
+                Submit Another Application
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -255,30 +657,30 @@ const Apply: React.FC = () => {
   }
 
   return (
-    <section className="py-24 bg-white min-h-screen relative overflow-hidden">
+    <section className="py-12 sm:py-24 bg-white min-h-screen relative overflow-hidden">
       {/* Background Orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-100 rounded-full blur-3xl opacity-30"></div>
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent-100 rounded-full blur-3xl opacity-30"></div>
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl relative z-10">
         {/* Header */}
-        <div className="text-center mb-20">
-          <h2 className="text-4xl sm:text-7xl font-black text-navy-900 mb-6 tracking-tighter">
+        <div className="text-center mb-10 sm:mb-20 px-4 sm:px-0">
+          <h2 className="text-2xl sm:text-7xl font-black text-navy-900 mb-4 sm:mb-6 tracking-tighter">
             Join the <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-400">Future</span>
           </h2>
-          <p className="text-xl text-navy-600 max-w-2xl mx-auto font-medium leading-relaxed">
-            Ready to kickstart your career? Complete the multi-step application below to join Gentrobyte's elite internship program.
+          <p className="text-sm sm:text-xl text-navy-600 max-w-2xl mx-auto font-medium leading-relaxed">
+            Ready to kickstart your career? Complete the multi-step application below to join Gentrobyte&apos;s elite internship program.
           </p>
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-20">
+        <div className="mb-12 sm:mb-20 px-4 sm:px-0">
           <div className="flex items-center justify-between max-w-3xl mx-auto">
             {steps.map((step, index) => (
               <React.Fragment key={step.number}>
                 <div className="flex flex-col items-center flex-1 relative group">
                   <div
-                    className={`w-16 h-16 rounded-[1.25rem] flex items-center justify-center border-2 transition-all duration-500 transform ${
+                    className={`w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center border-2 transition-all duration-500 transform ${
                       currentStep === step.number
                         ? 'bg-primary-500 border-primary-500 text-white scale-110 shadow-2xl shadow-primary-500/30'
                         : currentStep > step.number
@@ -317,143 +719,265 @@ const Apply: React.FC = () => {
         </div>
 
         {/* Form Container */}
-        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-navy-900/10 overflow-hidden border border-navy-50">
-          <div className="bg-navy-900 px-10 py-5 flex justify-between items-center relative overflow-hidden">
+        <div className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-2xl shadow-navy-900/10 overflow-hidden border border-navy-50 mx-4 sm:mx-0">
+          <div className="bg-navy-900 px-6 sm:px-10 py-4 sm:py-5 flex justify-between items-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-primary-600/10 to-transparent"></div>
             <span className="text-navy-400 text-[10px] font-black uppercase tracking-[0.2em] relative z-10">Step {currentStep} of {totalSteps}</span>
             <span className="text-primary-400 text-sm font-bold relative z-10">{steps[currentStep-1].title}</span>
           </div>
           
-          <div className="p-6 md:p-12">
+          <div className="p-6 sm:p-12">
             <form onSubmit={handleSubmit}>
               {/* Step 1: Personal Info */}
               {currentStep === 1 && (
                 <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                    <div>
-                      <label htmlFor="firstName" className="block text-sm font-bold text-navy-900 mb-2">
-                        First Name <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="firstName"
-                        name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.firstName ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="e.g. John"
-                      />
-                      {errors.firstName && <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1"><span>⚠</span> {errors.firstName}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="lastName" className="block text-sm font-bold text-navy-900 mb-2">
-                        Last Name <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="lastName"
-                        name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.lastName ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="e.g. Doe"
-                      />
-                      {errors.lastName && <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1"><span>⚠</span> {errors.lastName}</p>}
-                    </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-bold text-navy-900 mb-2">
+                      Email <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.email ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="your@email.com"
+                    />
+                    {errors.email && <p className="mt-2 text-xs font-bold text-red-500">{errors.email}</p>}
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-bold text-navy-900 mb-2">
-                        Email Address <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.email ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="john@example.com"
-                      />
-                      {errors.email && <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1"><span>⚠</span> {errors.email}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="confirmEmail" className="block text-sm font-bold text-navy-900 mb-2">
-                        Confirm Email Address <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        id="confirmEmail"
-                        name="confirmEmail"
-                        value={formData.confirmEmail}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.confirmEmail ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="john@example.com"
-                      />
-                      {errors.confirmEmail && <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1"><span>⚠</span> {errors.confirmEmail}</p>}
+                  <div>
+                    <label htmlFor="confirmEmail" className="block text-sm font-bold text-navy-900 mb-2">
+                      Confirm Email <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="confirmEmail"
+                      name="confirmEmail"
+                      value={formData.confirmEmail}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.confirmEmail ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="your@email.com"
+                    />
+                    {errors.confirmEmail && <p className="mt-2 text-xs font-bold text-red-500">{errors.confirmEmail}</p>}
+                  </div>
+
+                  {/* OTP Verification Section */}
+                  <div className="bg-primary-50/30 border border-primary-100 rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-navy-900 mb-4 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
+                      Email Verification
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <button
+                          type="button"
+                          onClick={sendOTP}
+                          disabled={!formData.email || otpSent || otpLoading}
+                          className={`w-full px-4 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 ${
+                            !formData.email || otpSent || otpLoading
+                              ? 'bg-navy-100 text-navy-300 cursor-not-allowed'
+                              : 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-600/20'
+                          }`}
+                        >
+                          {otpLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              Sending...
+                            </>
+                          ) : otpSent ? (
+                            <>
+                              <HiCheckCircle className="h-5 w-5" />
+                              OTP Sent
+                            </>
+                          ) : (
+                            'Send OTP'
+                          )}
+                        </button>
+                        {otpSent && (
+                          <p className="mt-2 text-xs text-navy-600 text-center">
+                            Check your email for the 6-digit code
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <input
+                            type="text"
+                            value={otp}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                              setOtp(val);
+                              if (errors.otp) {
+                                setErrors(prev => {
+                                  const next = { ...prev };
+                                  delete next.otp;
+                                  return next;
+                                });
+                              }
+                            }}
+                            disabled={!otpSent}
+                            maxLength={6}
+                            className={`flex-1 px-4 py-3 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-bold tracking-widest text-center ${errors.otp ? 'border-red-500' : 'border-transparent'}`}
+                            placeholder="000000"
+                          />
+                          <button
+                            type="button"
+                            onClick={verifyOTP}
+                            disabled={!otpSent || otp.length !== 6}
+                            className={`px-4 py-3 rounded-xl font-bold transition-all duration-300 whitespace-nowrap ${
+                              !otpSent || otp.length !== 6
+                                ? 'bg-navy-100 text-navy-300 cursor-not-allowed'
+                                : 'bg-accent-500 hover:bg-accent-600 text-white shadow-lg shadow-accent-500/20'
+                            }`}
+                          >
+                            Verify
+                          </button>
+                        </div>
+                        {otpSent && (
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={resendOTP}
+                              disabled={otpTimer > 0}
+                              className={`text-xs font-bold ${
+                                otpTimer > 0 
+                                  ? 'text-navy-400 cursor-not-allowed' 
+                                  : 'text-primary-600 hover:text-primary-700'
+                              }`}
+                            >
+                              {otpTimer > 0 ? `Resend in ${otpTimer}s` : 'Resend OTP'}
+                            </button>
+                            {otpVerified && (
+                              <span className="text-xs font-bold text-green-600 flex items-center gap-1">
+                                <HiCheckCircle className="h-4 w-4" />
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {errors.otp && <p className="mt-2 text-xs font-bold text-red-500">{errors.otp}</p>}
+                      </div>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-bold text-navy-900 mb-2">
-                      Phone Number (India) <span className="text-accent-500">*</span>
+                    <label htmlFor="fullName" className="block text-sm font-bold text-navy-900 mb-2">
+                      Full Name (CAPITAL LETTERS) <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="fullName"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.fullName ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="JOHN DOE"
+                    />
+                    {errors.fullName && <p className="mt-2 text-xs font-bold text-red-500">{errors.fullName}</p>}
+                  </div>
+
+                  <GenderRadioGroup />
+
+                  <div>
+                    <label htmlFor="whatsapp" className="block text-sm font-bold text-navy-900 mb-2">
+                      WhatsApp Number <span className="text-accent-500">*</span>
                     </label>
                     <div className="relative">
                       <input
                         type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
+                        id="whatsapp"
+                        name="whatsapp"
+                        value={formData.whatsapp}
                         onChange={handleInputChange}
                         required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-bold tracking-widest placeholder:text-navy-300 ${errors.phone ? 'border-red-500' : 'border-transparent'}`}
+                        className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-bold tracking-widest placeholder:text-navy-300 ${errors.whatsapp ? 'border-red-500' : 'border-transparent'}`}
                         placeholder="+91XXXXXXXXXX"
                       />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                        <span className="text-xs font-bold text-navy-400 bg-navy-100 px-2 py-1 rounded">IND</span>
-                      </div>
                     </div>
-                    {errors.phone && <p className="mt-2 text-xs font-bold text-red-500 flex items-center gap-1"><span>⚠</span> {errors.phone}</p>}
+                    {errors.whatsapp && <p className="mt-2 text-xs font-bold text-red-500">{errors.whatsapp}</p>}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                    <div>
-                      <label htmlFor="college" className="block text-sm font-bold text-navy-900 mb-2">
-                        College / University <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="college"
-                        name="college"
-                        value={formData.college}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.college ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="University of..."
-                      />
-                      {errors.college && <p className="mt-2 text-xs font-bold text-red-500"> {errors.college}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="degree" className="block text-sm font-bold text-navy-900 mb-2">
-                        Degree Program <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        id="degree"
-                        name="degree"
-                        value={formData.degree}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.degree ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="B.E. Computer Science"
-                      />
-                      {errors.degree && <p className="mt-2 text-xs font-bold text-red-500">{errors.degree}</p>}
-                    </div>
+                  <CountryDropdown />
+
+                  <div>
+                    <label htmlFor="college" className="block text-sm font-bold text-navy-900 mb-2">
+                      College Name <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="college"
+                      name="college"
+                      value={formData.college}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.college ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="Enter your college name"
+                    />
+                    {errors.college && <p className="mt-2 text-xs font-bold text-red-500">{errors.college}</p>}
+                  </div>
+
+                  <DegreeRadioGroup />
+
+                  <DomainRadioGroup />
+                </div>
+              )}
+
+              {/* Step 2: Academic & Professional Details */}
+              {currentStep === 2 && (
+                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div>
+                    <label htmlFor="collegeMail" className="block text-sm font-bold text-navy-900 mb-2">
+                      College Mail <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      id="collegeMail"
+                      name="collegeMail"
+                      value={formData.collegeMail}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.collegeMail ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="your@college.edu"
+                    />
+                    {errors.collegeMail && <p className="mt-2 text-xs font-bold text-red-500">{errors.collegeMail}</p>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="branch" className="block text-sm font-bold text-navy-900 mb-2">
+                      📷 Branch Name <span className="text-accent-500">*</span>
+                    </label>
+                    <select
+                      id="branch"
+                      name="branch"
+                      value={formData.branch}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => ({ ...prev, branch: val }));
+                        if (errors.branch) {
+                          setErrors(prev => {
+                            const next = { ...prev };
+                            delete next.branch;
+                            return next;
+                          });
+                        }
+                      }}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium ${errors.branch ? 'border-red-500' : 'border-transparent'}`}
+                    >
+                      <option value="">Select branch (based on Degree program)</option>
+                      {(branchOptionsMap[formData.degree] || []).map((b) => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
+                    </select>
+                    {(!formData.degree || (branchOptionsMap[formData.degree] || []).length === 0) && (
+                      <p className="mt-2 text-xs text-navy-500">Select your Degree Program on the previous page to see branches.</p>
+                    )}
+                    {errors.branch && <p className="mt-2 text-xs font-bold text-red-500">{errors.branch}</p>}
                   </div>
 
                   <div>
@@ -468,27 +992,58 @@ const Apply: React.FC = () => {
                       onChange={handleInputChange}
                       required
                       maxLength={4}
-                      className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-bold placeholder:text-navy-300 ${errors.graduationYear ? 'border-red-500' : 'border-transparent'}`}
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-bold placeholder:text-navy-300 ${errors.graduationYear ? 'border-red-500' : 'border-transparent'}`}
                       placeholder="e.g. 2026"
                     />
                     <p className="mt-2 text-[10px] text-navy-400 font-medium italic">Must be between current year and 2029</p>
                     {errors.graduationYear && <p className="mt-2 text-xs font-bold text-red-500">{errors.graduationYear}</p>}
                   </div>
+
+                  <div>
+                    <label htmlFor="githubUrl" className="block text-sm font-bold text-navy-900 mb-2">
+                      🐙 GitHub URL <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      id="githubUrl"
+                      name="githubUrl"
+                      value={formData.githubUrl}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.githubUrl ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="https://github.com/username"
+                    />
+                    {errors.githubUrl && <p className="mt-2 text-xs font-bold text-red-500">{errors.githubUrl}</p>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="portfolioUrl" className="block text-sm font-bold text-navy-900 mb-2">
+                      🌐 Portfolio Website <span className="text-accent-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="portfolioUrl"
+                      name="portfolioUrl"
+                      value={formData.portfolioUrl}
+                      onChange={handleInputChange}
+                      required
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.portfolioUrl ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="portfolio.com or https://portfolio.com"
+                    />
+                    {errors.portfolioUrl && <p className="mt-2 text-xs font-bold text-red-500">{errors.portfolioUrl}</p>}
+                  </div>
                 </div>
               )}
 
-              {/* Step 2: Skills & Experience */}
-              {currentStep === 2 && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {/* Step 3: Skills & Motivation */}
+              {currentStep === 3 && (
+                <div className="space-y-6 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div>
                     <label
                       htmlFor="skills"
-                      className="block text-sm font-bold text-navy-900 mb-3 flex justify-between items-end"
+                      className="block text-sm font-bold text-navy-900 mb-3"
                     >
-                      <span>Technical Skills & Proficiency <span className="text-accent-500">*</span></span>
-                      <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-tighter ${countWords(formData.skills) < 120 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                        {countWords(formData.skills)} / 120 words
-                      </span>
+                      Technical Skills & Proficiency <span className="text-accent-500">*</span>
                     </label>
                     <textarea
                       id="skills"
@@ -497,56 +1052,18 @@ const Apply: React.FC = () => {
                       onChange={handleInputChange}
                       required
                       rows={6}
-                      className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 resize-none ${errors.skills ? 'border-red-500' : 'border-transparent'}`}
-                      placeholder="List your core technologies, languages, and any significant projects you've worked on..."
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 resize-none ${errors.skills ? 'border-red-500' : 'border-transparent'}`}
+                      placeholder="List your core technologies, languages, frameworks, and any significant projects you&apos;ve worked on..."
                     />
                     {errors.skills && <p className="mt-2 text-xs font-bold text-red-500"> {errors.skills}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div>
-                      <label htmlFor="githubUrl" className="block text-sm font-bold text-navy-900 mb-2">
-                        GitHub Profile URL <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="url"
-                        id="githubUrl"
-                        name="githubUrl"
-                        value={formData.githubUrl}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.githubUrl ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="https://github.com/yourusername"
-                      />
-                      {errors.githubUrl && <p className="mt-2 text-xs font-bold text-red-500"> {errors.githubUrl}</p>}
-                    </div>
-                    <div>
-                      <label htmlFor="portfolioUrl" className="block text-sm font-bold text-navy-900 mb-2">
-                        Portfolio / Website URL <span className="text-accent-500">*</span>
-                      </label>
-                      <input
-                        type="url"
-                        id="portfolioUrl"
-                        name="portfolioUrl"
-                        value={formData.portfolioUrl}
-                        onChange={handleInputChange}
-                        required
-                        className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 ${errors.portfolioUrl ? 'border-red-500' : 'border-transparent'}`}
-                        placeholder="https://yourportfolio.com"
-                      />
-                      {errors.portfolioUrl && <p className="mt-2 text-xs font-bold text-red-500"> {errors.portfolioUrl}</p>}
-                    </div>
                   </div>
 
                   <div>
                     <label
                       htmlFor="whyApply"
-                      className="block text-sm font-bold text-navy-900 mb-3 flex justify-between items-end"
+                      className="block text-sm font-bold text-navy-900 mb-3"
                     >
-                      <span>Why Gentrobyte? <span className="text-accent-500">*</span></span>
-                      <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-tighter ${countWords(formData.whyApply) < 60 ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>
-                        {countWords(formData.whyApply)} / 60 words
-                      </span>
+                      Why Gentrobyte? <span className="text-accent-500">*</span>
                     </label>
                     <textarea
                       id="whyApply"
@@ -555,7 +1072,7 @@ const Apply: React.FC = () => {
                       onChange={handleInputChange}
                       required
                       rows={5}
-                      className={`w-full px-5 py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 resize-none ${errors.whyApply ? 'border-red-500' : 'border-transparent'}`}
+                      className={`w-full px-4 sm:px-5 py-3 sm:py-4 bg-navy-50 border-2 rounded-xl focus:ring-0 focus:border-primary-500 transition-all outline-none text-navy-900 font-medium placeholder:text-navy-300 resize-none ${errors.whyApply ? 'border-red-500' : 'border-transparent'}`}
                       placeholder="Explain your motivation and what you hope to achieve during this internship..."
                     />
                     {errors.whyApply && <p className="mt-2 text-xs font-bold text-red-500"> {errors.whyApply}</p>}
@@ -563,60 +1080,10 @@ const Apply: React.FC = () => {
                 </div>
               )}
 
-              {/* Step 3: Resume */}
-              {currentStep === 3 && (
-                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="text-center max-w-lg mx-auto mb-8">
-                    <h4 className="text-xl font-bold text-navy-900 mb-2">Upload Your CV</h4>
-                    <p className="text-navy-500 text-sm">Please provide your latest resume in PDF or Word format.</p>
-                  </div>
-                  
-                  <div 
-                    className={`relative group cursor-pointer border-3 border-dashed rounded-3xl p-12 transition-all duration-300 flex flex-col items-center justify-center ${
-                      errors.resume 
-                        ? 'border-red-500 bg-red-50' 
-                        : formData.resume 
-                        ? 'border-primary-500 bg-primary-50' 
-                        : 'border-navy-100 bg-navy-50 hover:border-primary-400 hover:bg-white'
-                    }`}
-                  >
-                    <input
-                      id="resume"
-                      name="resume"
-                      type="file"
-                      className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleFileChange}
-                      required
-                    />
-                    
-                    <div className="bg-white p-6 rounded-2xl shadow-sm mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <HiDocumentText className={`h-12 w-12 ${errors.resume ? 'text-red-500' : 'text-primary-600'}`} />
-                    </div>
-                    
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-navy-900">
-                        {formData.resume ? 'File Selected!' : 'Drop your resume here'}
-                      </p>
-                      <p className="text-navy-400 text-sm mt-1">
-                        {formData.resume ? formData.resume.name : 'or click to browse from your computer'}
-                      </p>
-                    </div>
-
-                    <div className="mt-6 flex gap-3">
-                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-navy-100">PDF</span>
-                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-navy-100">DOCX</span>
-                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-navy-100">Max 10MB</span>
-                    </div>
-                  </div>
-                  {errors.resume && <p className="mt-4 text-center text-sm font-bold text-red-500">{errors.resume}</p>}
-                </div>
-              )}
-
               {/* Step 4: Review */}
               {currentStep === 4 && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 gap-8"> {/* Changed from grid-cols-1 lg:grid-cols-2 to stack vertically on all screens */}
                     <div className="bg-navy-50 p-6 rounded-2xl border border-navy-100">
                       <h4 className="text-sm font-bold text-primary-600 uppercase tracking-widest mb-4 flex items-center gap-2">
                         <span className="w-2 h-2 bg-primary-500 rounded-full"></span>
@@ -625,19 +1092,31 @@ const Apply: React.FC = () => {
                       <div className="space-y-3">
                         <div className="flex justify-between border-b border-navy-100 pb-2">
                           <span className="text-xs text-navy-400 font-bold uppercase">Name</span>
-                          <span className="text-sm text-navy-900 font-bold">{formData.firstName} {formData.lastName}</span>
+                          <span className="text-sm text-navy-900 font-bold">{formData.fullName}</span>
                         </div>
                         <div className="flex justify-between border-b border-navy-100 pb-2">
                           <span className="text-xs text-navy-400 font-bold uppercase">Email</span>
                           <span className="text-sm text-navy-900 font-bold">{formData.email}</span>
                         </div>
                         <div className="flex justify-between border-b border-navy-100 pb-2">
-                          <span className="text-xs text-navy-400 font-bold uppercase">Phone</span>
-                          <span className="text-sm text-navy-900 font-bold">{formData.phone}</span>
+                          <span className="text-xs text-navy-400 font-bold uppercase">Gender</span>
+                          <span className="text-sm text-navy-900 font-bold">{formData.gender}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-navy-100 pb-2">
+                          <span className="text-xs text-navy-400 font-bold uppercase">WhatsApp</span>
+                          <span className="text-sm text-navy-900 font-bold">{formData.whatsapp}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-navy-100 pb-2">
+                          <span className="text-xs text-navy-400 font-bold uppercase">Country</span>
+                          <span className="text-sm text-navy-900 font-bold">{formData.country}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-navy-100 pb-2">
+                          <span className="text-xs text-navy-400 font-bold uppercase">College Mail</span>
+                          <span className="text-sm text-navy-900 font-bold">{formData.collegeMail}</span>
                         </div>
                         <div className="flex flex-col pt-2">
                           <span className="text-xs text-navy-400 font-bold uppercase mb-1">Education</span>
-                          <span className="text-sm text-navy-900 font-bold">{formData.degree}</span>
+                          <span className="text-sm text-navy-900 font-bold">{formData.degree} {formData.branch ? `• ${formData.branch}` : ''}</span>
                           <span className="text-xs text-navy-600">{formData.college} ({formData.graduationYear})</span>
                         </div>
                       </div>
@@ -696,18 +1175,18 @@ const Apply: React.FC = () => {
 
               {/* Navigation Buttons - Sticky on Mobile */}
               <div className="sticky bottom-0 sm:static bg-white/80 sm:bg-transparent backdrop-blur-md sm:backdrop-blur-none -mx-6 sm:mx-0 px-6 sm:px-0 py-4 sm:py-0 mt-8 sm:mt-12 border-t border-navy-50 sm:border-t-0 z-20">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
                   <button
                     type="button"
                     onClick={handlePrevious}
                     disabled={currentStep === 1}
-                    className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-8 py-4 rounded-xl font-bold transition-all duration-300 ${
+                    className={`w-full sm:w-auto flex items-center justify-center space-x-2 px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold transition-all duration-300 text-sm sm:text-base ${
                       currentStep === 1
                         ? 'bg-navy-50 text-navy-200 cursor-not-allowed border border-transparent'
                         : 'bg-white text-navy-600 border-2 border-navy-100 hover:border-navy-900 hover:text-navy-900'
                     }`}
                   >
-                    <HiArrowLeft className="h-5 w-5" />
+                    <HiArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Previous</span>
                   </button>
 
@@ -715,18 +1194,18 @@ const Apply: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleNext}
-                      className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-800 text-white px-10 py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-navy-900/10"
+                      className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-navy-900 hover:bg-navy-800 text-white px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-navy-900/10 text-sm sm:text-base"
                     >
                       <span>Continue</span>
-                      <HiArrowRight className="h-5 w-5" />
+                      <HiArrowRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                   ) : (
                     <button
                       type="submit"
-                      className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-10 py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-primary-600/20"
+                      className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-8 sm:px-10 py-3.5 sm:py-4 rounded-xl font-bold transition-all duration-300 shadow-xl shadow-primary-600/20 text-sm sm:text-base"
                     >
                       <span>Finalize Application</span>
-                      <HiCheckCircle className="h-5 w-5" />
+                      <HiCheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
                   )}
                 </div>

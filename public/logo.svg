@@ -1,0 +1,33 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Primary gradient for background -->
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0099ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6b21ff;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Radial gradient for depth -->
+    <radialGradient id="depthGradient" cx="40%" cy="40%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.3" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Outer circle background -->
+  <circle cx="100" cy="100" r="100" fill="url(#mainGradient)"/>
+  
+  <!-- Depth layer -->
+  <circle cx="100" cy="100" r="100" fill="url(#depthGradient)"/>
+  
+  <!-- Head profile silhouette (left side) -->
+  <path d="M 70 50 Q 55 60 55 85 Q 55 110 70 120 L 100 120 L 100 50 Z" fill="white" opacity="0.15"/>
+  
+  <!-- Letter G with style -->
+  <g fill="white" font-family="'Segoe UI', sans-serif" font-weight="800" font-size="110" text-anchor="middle" dominant-baseline="middle">
+    <text x="105" y="115">G</text>
+  </g>
+  
+  <!-- Accent glow circle -->
+  <circle cx="100" cy="100" r="95" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
+</svg>
