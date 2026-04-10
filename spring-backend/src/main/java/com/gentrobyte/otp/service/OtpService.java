@@ -10,10 +10,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.gentrobyte.otp.config.JwtTokenProvider;
 import com.gentrobyte.otp.exception.InvalidOtpException;
 import com.gentrobyte.otp.exception.OtpExpiredException;
-import com.gentrobyte.otp.model.OtpEntry;
-import com.gentrobyte.otp.repository.OtpRepository;
+import com.gentrobyte.otp.model.OtpVerification;
+import com.gentrobyte.otp.repository.OtpVerificationRepository;
 
 /**
  * Business logic for generating, sending, and verifying one-time passwords (OTPs).
@@ -24,12 +25,19 @@ public class OtpService {
     private static final int OTP_LENGTH = 6;
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
-    private final OtpRepository otpRepository;
+    private final OtpVerificationRepository otpVerificationRepository;
+    private final UserService userService;
     private final JavaMailSender mailSender;
+    private final JwtTokenProvider jwtTokenProvider;
 
-    public OtpService(OtpRepository otpRepository, JavaMailSender mailSender) {
-        this.otpRepository = otpRepository;
+    public OtpService(OtpVerificationRepository otpVerificationRepository,
+                      UserService userService,
+                      JavaMailSender mailSender,
+                      JwtTokenProvider jwtTokenProvider) {
+        this.otpVerificationRepository = otpVerificationRepository;
+        this.userService = userService;
         this.mailSender = mailSender;
+        this.jwtTokenProvider = jwtTokenProvider;
     }
 
     /**
@@ -48,6 +56,7 @@ public class OtpService {
         String normalizedEmail = email.toLowerCase().trim();
         String otp = generateOtp();
 
+        userService.createOrGetUser(normalizedEmail);
         saveOtp(normalizedEmail, otp);
         sendOtpEmail(normalizedEmail, otp);
     }
@@ -56,8 +65,9 @@ public class OtpService {
      * Stores the OTP record in MongoDB.
      */
     private void saveOtp(String email, String otp) {
-        OtpEntry entry = new OtpEntry(email, otp, new Date());
-        otpRepository.save(entry);
+        Date expiryTime = new Date(System.currentTimeMillis() + 300_000);
+        OtpVerification entry = new OtpVerification(email, otp, expiryTime, false);
+        otpVerificationRepository.save(entry);
     }
 
     /**
@@ -82,33 +92,34 @@ public class OtpService {
     }
 
     /**
-     * Verifies the provided OTP for the given email.
+     * Verifies the provided OTP for the given email and returns a JWT token.
      */
     @Transactional
-    public void verifyOtp(String email, String otp) {
+    public String verifyOtp(String email, String otp) {
         String normalizedEmail = email.toLowerCase().trim();
         String normalizedOtp = otp.trim();
 
-        Optional<OtpEntry> optional = otpRepository.findByEmailAndOtp(normalizedEmail, normalizedOtp);
+        Optional<OtpVerification> optional = otpVerificationRepository.findByEmailAndOtp(normalizedEmail, normalizedOtp);
 
         if (optional.isEmpty()) {
             throw new InvalidOtpException();
         }
 
-        OtpEntry entry = optional.get();
-        if (isExpired(entry.getCreatedAt())) {
-            otpRepository.deleteByEmailAndOtp(normalizedEmail, normalizedOtp);
+        OtpVerification entry = optional.get();
+        if (isExpired(entry.getExpiryTime())) {
+            otpVerificationRepository.deleteByEmailAndOtp(normalizedEmail, normalizedOtp);
             throw new OtpExpiredException();
         }
 
-        otpRepository.deleteByEmailAndOtp(normalizedEmail, normalizedOtp);
+        otpVerificationRepository.deleteByEmailAndOtp(normalizedEmail, normalizedOtp);
+        userService.markVerified(normalizedEmail);
+        return jwtTokenProvider.createToken(normalizedEmail);
     }
 
-    private boolean isExpired(Date createdAt) {
-        if (createdAt == null) {
+    private boolean isExpired(Date expiryTime) {
+        if (expiryTime == null) {
             return true;
         }
-        long ageMs = new Date().getTime() - createdAt.getTime();
-        return ageMs > 300_000; // 5 minutes
+        return expiryTime.before(new Date());
     }
 }
